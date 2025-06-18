@@ -226,6 +226,7 @@
     <button onclick="showForm('thread')">✉️</button>
     <button onclick="showForm('contract')">🔐</button>
   </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import { getDatabase, ref, push, get, remove } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
@@ -268,16 +269,32 @@
       push(ref(db, 'threads'), newThread);
     });
 
-    window.signContract = () => {
+    window.signContract = async () => {
       const name = document.getElementById("contractName").value;
       const age = document.getElementById("contractAge").value;
+      const imageInput = document.getElementById("contractImage");
+
       if (!name || !age) return alert("Name and Age are required");
+
+      let imageURL = "";
+      if (imageInput.files.length > 0) {
+        const file = imageInput.files[0];
+        imageURL = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
       const contract = {
         name,
         age,
+        imageURL,
         text: `I, ${name}, aged ${age}, confirm that I am a member of the No Snitch Group. I fully understand and accept that this is a permanent agreement. I promise that I will never snitch on any member of the group and will never leak or share any part of the group chat with anyone outside the group.`,
         timestamp: Date.now()
       };
+
       push(ref(db, 'contracts'), contract);
     };
 
@@ -310,6 +327,30 @@
       });
     }
 
+    function renderContracts(data) {
+      const el = document.getElementById("contracts");
+      el.innerHTML = "<h2>Pinned Contracts (Max 10)</h2>";
+      data.slice(0, 10).forEach(([key, c]) => {
+        const div = document.createElement("div");
+        div.className = "contract";
+        div.innerHTML = `
+          <strong>${c.name} (${c.age})</strong>
+          <p>${c.text}</p>
+          ${c.imageURL ? `<img src="${c.imageURL}" style="max-width:100%; margin-top:10px;">` : ''}
+          <div class='remove-btn' onclick='removeContract("${key}")'>&times;</div>
+        `;
+        el.appendChild(div);
+      });
+    }
+
+    window.removeThread = (id) => {
+      remove(ref(db, `threads/${id}`)).then(() => loadThreads());
+    };
+
+    window.removeContract = (id) => {
+      remove(ref(db, `contracts/${id}`)).then(() => loadContracts());
+    };
+
     window.replyToThread = async (key) => {
       const nameEl = document.getElementById(`replyName-${key}`);
       const textEl = document.getElementById(`replyText-${key}`);
@@ -326,25 +367,6 @@
         await remove(ref(db, `threads/${key}`));
         loadThreads();
       }
-    };
-
-    function renderContracts(data) {
-      const el = document.getElementById("contracts");
-      el.innerHTML = "<h2>Pinned Contracts (Max 10)</h2>";
-      data.slice(0, 10).forEach(([key, c]) => {
-        const div = document.createElement("div");
-        div.className = "contract";
-        div.innerHTML = `<strong>${c.name} (${c.age})</strong><p>${c.text}</p><div class='remove-btn' onclick='removeContract("${key}")'>&times;</div>`;
-        el.appendChild(div);
-      });
-    }
-
-    window.removeThread = (id) => {
-      remove(ref(db, `threads/${id}`)).then(() => loadThreads());
-    };
-
-    window.removeContract = (id) => {
-      remove(ref(db, `contracts/${id}`)).then(() => loadContracts());
     };
 
     function loadThreads() {
