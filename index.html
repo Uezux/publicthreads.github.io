@@ -125,71 +125,33 @@ I, [NAME], aged [AGE], hereby swear not to reveal, report, expose, or otherwise 
   <!-- Threads Display -->
   <div id="threads"></div>
 
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+
   <script>
-    const contractForm = document.getElementById('contractForm');
-    const nameInput = document.getElementById('contractName');
-    const ageInput = document.getElementById('contractAge');
-    const textArea = document.getElementById('contractText');
-    const photoInput = document.getElementById('contractPhoto');
-    const signButton = document.getElementById('signButton');
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBpbIxqdF8V88uhWnyhTDWdGQBcnqk11gQ",
+      authDomain: "no-snitch-threads-and-contract.firebaseapp.com",
+      databaseURL: "https://no-snitch-threads-and-contract-default-rtdb.firebaseio.com",
+      projectId: "no-snitch-threads-and-contract",
+      storageBucket: "no-snitch-threads-and-contract.firebasestorage.app",
+      messagingSenderId: "99415431267",
+      appId: "1:99415431267:web:47576524591b1e0f678056",
+      measurementId: "G-1JB5GTD4LH"
+    };
 
-    const threadForm = document.getElementById('threadForm');
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    firebase.analytics();
+    const db = firebase.database();
+
+    const threadsRef = db.ref('threads');
+    const pinnedRef = db.ref('pinnedContract');
+
     const threadsDiv = document.getElementById('threads');
-
-    // Load pinned contract and threads on page load
-    window.addEventListener('DOMContentLoaded', () => {
-      const pinned = JSON.parse(localStorage.getItem('pinnedContract'));
-      if (pinned) displayThread(pinned, true);
-
-      const savedThreads = JSON.parse(localStorage.getItem('threads')) || [];
-      savedThreads.forEach(thread => displayThread(thread));
-    });
-
-    // Contract signing
-    signButton.addEventListener('click', () => {
-      const name = nameInput.value.trim();
-      const age = ageInput.value.trim();
-      if (!name || !age) {
-        alert("Please enter your full name and age.");
-        return;
-      }
-
-      const updatedText = `I, ${name}, aged ${age}, hereby swear not to reveal, report, expose, or otherwise disclose any internal matters, secrets, or activities of the No Snitch Group to any outside parties. By submitting this contract, I commit to this oath permanently and of my own free will.`;
-
-      const reader = new FileReader();
-      const file = photoInput.files[0];
-
-      if (file) {
-        reader.onload = function (e) {
-          const imageData = e.target.result;
-          const contract = { name, age, message: updatedText, photo: imageData, pinned: true };
-          localStorage.setItem('pinnedContract', JSON.stringify(contract));
-          displayThread(contract, true);
-          contractForm.reset();
-        };
-        reader.readAsDataURL(file);
-      } else {
-        const contract = { name, age, message: updatedText, photo: null, pinned: true };
-        localStorage.setItem('pinnedContract', JSON.stringify(contract));
-        displayThread(contract, true);
-        contractForm.reset();
-      }
-    });
-
-    // Public thread post
-    threadForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-
-      const name = document.getElementById('name').value.trim();
-      const message = document.getElementById('message').value.trim();
-
-      if (!name || !message) return;
-
-      const thread = { name, message };
-      displayThread(thread);
-      saveThread(thread);
-      threadForm.reset();
-    });
 
     function displayThread(data, pinned = false) {
       if (pinned) {
@@ -208,15 +170,71 @@ I, [NAME], aged [AGE], hereby swear not to reveal, report, expose, or otherwise 
         ${data.photo ? `<img src="${data.photo}" alt="User photo">` : ''}
       `;
 
-      pinned ? threadsDiv.prepend(div) : threadsDiv.appendChild(div);
+      if (pinned) {
+        threadsDiv.prepend(div);
+      } else {
+        threadsDiv.appendChild(div);
+      }
     }
 
-    function saveThread(thread) {
-      const threads = JSON.parse(localStorage.getItem('threads')) || [];
-      threads.push(thread);
-      localStorage.setItem('threads', JSON.stringify(threads));
+    function loadThreads() {
+      threadsDiv.innerHTML = "";
+      pinnedRef.once('value', snapshot => {
+        const pinned = snapshot.val();
+        if (pinned) displayThread(pinned, true);
+      });
+
+      threadsRef.once('value', snapshot => {
+        const data = snapshot.val();
+        if (data) {
+          Object.values(data).forEach(thread => {
+            displayThread(thread);
+          });
+        }
+      });
     }
+
+    // Auto refresh every 20 seconds
+    setInterval(loadThreads, 20000);
+    loadThreads();
+
+    // Handle contract sign
+    document.getElementById('signButton').addEventListener('click', () => {
+      const name = document.getElementById('contractName').value.trim();
+      const age = document.getElementById('contractAge').value.trim();
+      const contractText = `I, ${name}, aged ${age}, hereby swear not to reveal, report, expose, or otherwise disclose any internal matters, secrets, or activities of the No Snitch Group to any outside parties. By submitting this contract, I commit to this oath permanently and of my own free will.`;
+      const file = document.getElementById('contractPhoto').files[0];
+
+      if (!name || !age) return alert("Fill in name and age.");
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const contract = { name, age, message: contractText, photo: e.target.result };
+          pinnedRef.set(contract);
+          loadThreads();
+          document.getElementById('contractForm').reset();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const contract = { name, age, message: contractText, photo: null };
+        pinnedRef.set(contract);
+        loadThreads();
+        document.getElementById('contractForm').reset();
+      }
+    });
+
+    // Handle thread post
+    document.getElementById('threadForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const message = document.getElementById('message').value.trim();
+      if (!name || !message) return;
+
+      threadsRef.push({ name, message });
+      document.getElementById('threadForm').reset();
+      loadThreads();
+    });
   </script>
-
 </body>
 </html>
