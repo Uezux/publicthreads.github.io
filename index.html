@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Public Thread</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* General styles */
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    form {
+      width: 100%;
+      max-width: 500px;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    button {
+      margin-top: 10px;
+      width: 100%;
+      padding: 12px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    #threads {
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .thread {
+      background: white;
+      padding: 15px 20px;
+      margin-top: 15px;
+      border-left: 5px solid #007bff;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .thread h3 {
+      margin: 0 0 5px;
+      font-size: 1.1rem;
+      color: #333;
+    }
+
+    .thread p {
+      margin: 0;
+      color: #555;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      form, #threads {
+        width: 95%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Public Thread</h1>
+
+  <form id="threadForm">
+    <input type="text" id="name" placeholder="Your name" required>
+    <textarea id="message" placeholder="Write your message..." required></textarea>
+    <button type="submit">Post Thread</button>
+  </form>
+
+  <div id="threads"></div>
+
+  <script>
+    const form = document.getElementById('threadForm');
+    const threadsDiv = document.getElementById('threads');
+
+    // Load from localStorage on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedThreads = JSON.parse(localStorage.getItem('threads')) || [];
+      savedThreads.forEach(addThreadToPage);
+    });
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const name = document.getElementById('name').value.trim();
+      const message = document.getElementById('message').value.trim();
+
+      if (!name || !message) return;
+
+      const thread = { name, message };
+      addThreadToPage(thread, true);
+      form.reset();
+    });
+
+    function addThreadToPage(thread, save = false) {
+      const div = document.createElement('div');
+      div.classList.add('thread');
+      div.innerHTML = `
+        <h3>${thread.name}</h3>
+        <p>${thread.message}</p>
+      `;
+      threadsDiv.prepend(div); // Add to top
+
+      if (save) {
+        const threads = JSON.parse(localStorage.getItem('threads')) || [];
+        threads.unshift(thread); // Add to start
+        localStorage.setItem('threads', JSON.stringify(threads));
+      }
+    }
+  </script>
+
+</body>
+</html>
