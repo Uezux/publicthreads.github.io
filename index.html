@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Public Thread</title>
+  <title>No Snitch Group</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* General styles */
     body {
       font-family: Arial, sans-serif;
       background: #f0f2f5;
@@ -39,8 +38,12 @@
       font-size: 1rem;
     }
 
+    input[type="file"] {
+      padding: 5px;
+    }
+
     button {
-      margin-top: 10px;
+      margin-top: 15px;
       width: 100%;
       padding: 12px;
       background-color: #007bff;
@@ -72,11 +75,22 @@
     }
 
     .thread p {
-      margin: 0;
+      margin: 5px 0;
       color: #555;
     }
 
-    /* Responsive */
+    .thread img {
+      max-width: 100px;
+      height: auto;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+
+    .pinned {
+      background-color: #fff8dc;
+      border-left: 5px solid #ffa500;
+    }
+
     @media (max-width: 600px) {
       form, #threads {
         width: 95%;
@@ -86,27 +100,84 @@
 </head>
 <body>
 
-  <h1>Public Thread</h1>
+  <h1>No Snitch Group</h1>
 
+  <!-- Contract Form -->
+  <form id="contractForm">
+    <h2>📝 Sign the No Snitch Contract</h2>
+    <input type="text" id="contractName" placeholder="Full Name" required>
+    <input type="number" id="contractAge" placeholder="Age" required>
+    <input type="file" id="contractPhoto" accept="image/*">
+    <textarea id="contractText" rows="6" readonly>
+I, [NAME], aged [AGE], hereby swear not to reveal, report, expose, or otherwise disclose any internal matters, secrets, or activities of the No Snitch Group to any outside parties. By submitting this contract, I commit to this oath permanently and of my own free will.
+    </textarea>
+    <button type="button" id="signButton">🖐️ Sign with Fingerprint</button>
+  </form>
+
+  <!-- Public Thread Form -->
   <form id="threadForm">
+    <h2>💬 Post a Message</h2>
     <input type="text" id="name" placeholder="Your name" required>
     <textarea id="message" placeholder="Write your message..." required></textarea>
     <button type="submit">Post Thread</button>
   </form>
 
+  <!-- Threads Display -->
   <div id="threads"></div>
 
   <script>
-    const form = document.getElementById('threadForm');
+    const contractForm = document.getElementById('contractForm');
+    const nameInput = document.getElementById('contractName');
+    const ageInput = document.getElementById('contractAge');
+    const textArea = document.getElementById('contractText');
+    const photoInput = document.getElementById('contractPhoto');
+    const signButton = document.getElementById('signButton');
+
+    const threadForm = document.getElementById('threadForm');
     const threadsDiv = document.getElementById('threads');
 
-    // Load from localStorage on page load
+    // Load pinned contract and threads on page load
     window.addEventListener('DOMContentLoaded', () => {
+      const pinned = JSON.parse(localStorage.getItem('pinnedContract'));
+      if (pinned) displayThread(pinned, true);
+
       const savedThreads = JSON.parse(localStorage.getItem('threads')) || [];
-      savedThreads.forEach(addThreadToPage);
+      savedThreads.forEach(thread => displayThread(thread));
     });
 
-    form.addEventListener('submit', function(e) {
+    // Contract signing
+    signButton.addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      const age = ageInput.value.trim();
+      if (!name || !age) {
+        alert("Please enter your full name and age.");
+        return;
+      }
+
+      const updatedText = `I, ${name}, aged ${age}, hereby swear not to reveal, report, expose, or otherwise disclose any internal matters, secrets, or activities of the No Snitch Group to any outside parties. By submitting this contract, I commit to this oath permanently and of my own free will.`;
+
+      const reader = new FileReader();
+      const file = photoInput.files[0];
+
+      if (file) {
+        reader.onload = function (e) {
+          const imageData = e.target.result;
+          const contract = { name, age, message: updatedText, photo: imageData, pinned: true };
+          localStorage.setItem('pinnedContract', JSON.stringify(contract));
+          displayThread(contract, true);
+          contractForm.reset();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const contract = { name, age, message: updatedText, photo: null, pinned: true };
+        localStorage.setItem('pinnedContract', JSON.stringify(contract));
+        displayThread(contract, true);
+        contractForm.reset();
+      }
+    });
+
+    // Public thread post
+    threadForm.addEventListener('submit', function(e) {
       e.preventDefault();
 
       const name = document.getElementById('name').value.trim();
@@ -115,24 +186,35 @@
       if (!name || !message) return;
 
       const thread = { name, message };
-      addThreadToPage(thread, true);
-      form.reset();
+      displayThread(thread);
+      saveThread(thread);
+      threadForm.reset();
     });
 
-    function addThreadToPage(thread, save = false) {
-      const div = document.createElement('div');
-      div.classList.add('thread');
-      div.innerHTML = `
-        <h3>${thread.name}</h3>
-        <p>${thread.message}</p>
-      `;
-      threadsDiv.prepend(div); // Add to top
-
-      if (save) {
-        const threads = JSON.parse(localStorage.getItem('threads')) || [];
-        threads.unshift(thread); // Add to start
-        localStorage.setItem('threads', JSON.stringify(threads));
+    function displayThread(data, pinned = false) {
+      if (pinned) {
+        const existingPinned = document.querySelector('.pinned');
+        if (existingPinned) existingPinned.remove();
       }
+
+      const div = document.createElement('div');
+      div.className = 'thread' + (pinned ? ' pinned' : '');
+
+      const title = data.age ? `${data.name} (${data.age} years old)` : data.name;
+
+      div.innerHTML = `
+        <h3>${title}</h3>
+        <p>${data.message}</p>
+        ${data.photo ? `<img src="${data.photo}" alt="User photo">` : ''}
+      `;
+
+      pinned ? threadsDiv.prepend(div) : threadsDiv.appendChild(div);
+    }
+
+    function saveThread(thread) {
+      const threads = JSON.parse(localStorage.getItem('threads')) || [];
+      threads.push(thread);
+      localStorage.setItem('threads', JSON.stringify(threads));
     }
   </script>
 
