@@ -1,22 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
-  <meta charset="UTF-8">
-  <title>No Snitch Group</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>No Snitch Group - Contract & Threads with Full Color Customization</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    :root {
+      --color-bg-light: #f0f2f5;
+      --color-bg-dark: #121212;
+      --color-text-light: #333;
+      --color-text-dark: #ddd;
+      --color-btn-light: #007bff;
+      --color-btn-dark: #3399ff;
+      --color-btn-hover-light: #0056b3;
+      --color-btn-hover-dark: #1a73e8;
+    }
+    
     body {
       font-family: Arial, sans-serif;
-      background: #f0f2f5;
       margin: 0;
       padding: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      background: var(--color-bg-light);
+      color: var(--color-text-light);
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark {
+      background: var(--color-bg-dark);
+      color: var(--color-text-dark);
     }
 
     h1 {
       text-align: center;
+      margin-bottom: 1rem;
     }
 
     form {
@@ -27,6 +45,12 @@
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       margin-bottom: 30px;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark form {
+      background: #222;
+      color: var(--color-text-dark);
+      box-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
     }
 
     input, textarea {
@@ -36,22 +60,50 @@
       border: 1px solid #ccc;
       border-radius: 5px;
       font-size: 1rem;
+      background: white;
+      color: #000;
+      transition: background 0.3s, color 0.3s;
     }
-
-    input[type="file"] {
+    body.dark input, body.dark textarea {
+      background: #333;
+      color: #eee;
+      border: 1px solid #555;
+    }
+    
+    input[type="file"], input[type="color"] {
       padding: 5px;
+      margin-top: 10px;
+      width: auto;
+      display: inline-block;
+    }
+    
+    label.color-label {
+      display: inline-block;
+      margin-top: 10px;
+      margin-right: 10px;
+      font-weight: bold;
     }
 
     button {
       margin-top: 15px;
       width: 100%;
       padding: 12px;
-      background-color: #007bff;
+      background-color: var(--color-btn-light);
       color: white;
       border: none;
       border-radius: 5px;
       font-size: 1rem;
       cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: var(--color-btn-hover-light);
+    }
+    body.dark button {
+      background-color: var(--color-btn-dark);
+    }
+    body.dark button:hover {
+      background-color: var(--color-btn-hover-dark);
     }
 
     #threads {
@@ -60,23 +112,27 @@
     }
 
     .thread {
-      background: white;
       padding: 15px 20px;
       margin-top: 15px;
-      border-left: 5px solid #007bff;
+      border-left: 5px solid var(--color-primary-light);
       border-radius: 6px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: background 0.3s, color 0.3s, border-color 0.3s;
+      word-wrap: break-word;
+      color: inherit;
+    }
+    body.dark .thread {
+      box-shadow: 0 2px 5px rgba(255,255,255,0.1);
     }
 
     .thread h3 {
       margin: 0 0 5px;
       font-size: 1.1rem;
-      color: #333;
     }
 
     .thread p {
       margin: 5px 0;
-      color: #555;
+      white-space: pre-wrap;
     }
 
     .thread img {
@@ -87,8 +143,8 @@
     }
 
     .pinned {
-      background-color: #fff8dc;
-      border-left: 5px solid #ffa500;
+      /* pinned styling could be a different border thickness */
+      border-left-width: 8px;
     }
 
     @media (max-width: 600px) {
@@ -96,18 +152,52 @@
         width: 95%;
       }
     }
+
+    #themeToggle {
+      margin-bottom: 20px;
+      padding: 8px 16px;
+      border-radius: 5px;
+      background-color: var(--color-btn-light);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.3s;
+      align-self: flex-end;
+      max-width: 150px;
+    }
+    #themeToggle:hover {
+      background-color: var(--color-btn-hover-light);
+    }
+    body.dark #themeToggle {
+      background-color: var(--color-btn-dark);
+    }
+    body.dark #themeToggle:hover {
+      background-color: var(--color-btn-hover-dark);
+    }
   </style>
 </head>
 <body>
+  <button id="themeToggle">Dark Mode</button>
 
   <h1>No Snitch Group</h1>
 
   <!-- Contract Form -->
   <form id="contractForm">
     <h2>📝 Sign the No Snitch Contract</h2>
-    <input type="text" id="contractName" placeholder="Full Name" required>
-    <input type="number" id="contractAge" placeholder="Age" required>
-    <input type="file" id="contractPhoto" accept="image/*">
+    <input type="text" id="contractName" placeholder="Full Name" required />
+    <input type="number" id="contractAge" placeholder="Age" required />
+    <input type="file" id="contractPhoto" accept="image/*" />
+    
+    <div>
+      <label class="color-label" for="contractBgColor">Background Color</label>
+      <input type="color" id="contractBgColor" value="#fff8dc" />
+      <label class="color-label" for="contractTextColor">Text Color</label>
+      <input type="color" id="contractTextColor" value="#000000" />
+      <label class="color-label" for="contractBorderColor">Side Border Color</label>
+      <input type="color" id="contractBorderColor" value="#ffa500" />
+    </div>
+
     <textarea id="contractText" rows="6" readonly>
 I, [NAME], aged [AGE], hereby swear not to reveal, report, expose, or otherwise disclose any internal matters, secrets, or activities of the No Snitch Group to any outside parties. By submitting this contract, I commit to this oath permanently and of my own free will.
     </textarea>
@@ -117,7 +207,17 @@ I, [NAME], aged [AGE], hereby swear not to reveal, report, expose, or otherwise 
   <!-- Public Thread Form -->
   <form id="threadForm">
     <h2>💬 Post a Message</h2>
-    <input type="text" id="name" placeholder="Your name" required>
+    <input type="text" id="name" placeholder="Your name" required />
+
+    <div>
+      <label class="color-label" for="threadBgColor">Background Color</label>
+      <input type="color" id="threadBgColor" value="#ffffff" />
+      <label class="color-label" for="threadTextColor">Text Color</label>
+      <input type="color" id="threadTextColor" value="#000000" />
+      <label class="color-label" for="threadBorderColor">Side Border Color</label>
+      <input type="color" id="threadBorderColor" value="#007bff" />
+    </div>
+
     <textarea id="message" placeholder="Write your message..." required></textarea>
     <button type="submit">Post Thread</button>
   </form>
@@ -131,7 +231,6 @@ I, [NAME], aged [AGE], hereby swear not to reveal, report, expose, or otherwise 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
 
   <script>
-    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBpbIxqdF8V88uhWnyhTDWdGQBcnqk11gQ",
       authDomain: "no-snitch-threads-and-contract.firebaseapp.com",
@@ -142,33 +241,30 @@ I, [NAME], aged [AGE], hereby swear not to reveal, report, expose, or otherwise 
       appId: "1:99415431267:web:47576524591b1e0f678056",
       measurementId: "G-1JB5GTD4LH"
     };
-
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     firebase.analytics();
     const db = firebase.database();
 
-    const threadsRef = db.ref('threads');
-    const pinnedRef = db.ref('pinnedContract');
-
-    const threadsDiv = document.getElementById('threads');
+    const threadsRef = db.ref("threads");
+    const pinnedRef = db.ref("pinnedContracts");
+    const threadsDiv = document.getElementById("threads");
 
     function displayThread(data, pinned = false) {
-      if (pinned) {
-        const existingPinned = document.querySelector('.pinned');
-        if (existingPinned) existingPinned.remove();
-      }
-
-      const div = document.createElement('div');
-      div.className = 'thread' + (pinned ? ' pinned' : '');
+      const div = document.createElement("div");
+      div.className = "thread" + (pinned ? " pinned" : "");
 
       const title = data.age ? `${data.name} (${data.age} years old)` : data.name;
 
       div.innerHTML = `
         <h3>${title}</h3>
-        <p>${data.message}</p>
-        ${data.photo ? `<img src="${data.photo}" alt="User photo">` : ''}
+        <p>${data.message.replace(/\n/g, "<br>")}</p>
+        ${data.photo ? `<img src="${data.photo}" alt="User photo">` : ""}
       `;
+
+      // Set user-chosen colors with fallback defaults
+      div.style.backgroundColor = data.bgColor || (pinned ? "#fff8dc" : "#ffffff");
+      div.style.color = data.textColor || "#000000";
+      div.style.borderLeftColor = data.borderColor || (pinned ? "#ffa500" : "#007bff");
 
       if (pinned) {
         threadsDiv.prepend(div);
@@ -177,14 +273,26 @@ I, [NAME], aged [AGE], hereby swear not to reveal, report, expose, or otherwise 
       }
     }
 
+    function displayPinnedContracts(pinnedContracts) {
+      const existingPinned = document.querySelectorAll('.pinned');
+      existingPinned.forEach(el => el.remove());
+
+      if (!pinnedContracts) return;
+
+      const pinnedArray = Object.values(pinnedContracts).slice(-10);
+      pinnedArray.reverse().forEach(contract => {
+        displayThread(contract, true);
+      });
+    }
+
     function loadThreads() {
       threadsDiv.innerHTML = "";
+
       pinnedRef.once('value', snapshot => {
-        const pinned = snapshot.val();
-        if (pinned) displayThread(pinned, true);
+        displayPinnedContracts(snapshot.val());
       });
 
-      threadsRef.once('value', snapshot => {
+      threadsRef.once("value", (snapshot) => {
         const data = snapshot.val();
         if (data) {
           Object.values(data).forEach(thread => {
@@ -194,47 +302,106 @@ I, [NAME], aged [AGE], hereby swear not to reveal, report, expose, or otherwise 
       });
     }
 
-    // Auto refresh every 20 seconds
-    setInterval(loadThreads, 20000);
-    loadThreads();
+    // Handle public thread submission
+    document.getElementById("threadForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value.trim();
+      const message = document.getElementById("message").value.trim();
+      const bgColor = document.getElementById("threadBgColor").value;
+      const textColor = document.getElementById("threadTextColor").value;
+      const borderColor = document.getElementById("threadBorderColor").value;
 
-    // Handle contract sign
-    document.getElementById('signButton').addEventListener('click', () => {
-      const name = document.getElementById('contractName').value.trim();
-      const age = document.getElementById('contractAge').value.trim();
-      const contractText = `I, ${name}, aged ${age}, hereby swear not to reveal, report, expose, or otherwise disclose any internal matters, secrets, or activities of the No Snitch Group to any outside parties. By submitting this contract, I commit to this oath permanently and of my own free will.`;
-      const file = document.getElementById('contractPhoto').files[0];
+      if (!name || !message) return alert("Fill in both name and message.");
 
-      if (!name || !age) return alert("Fill in name and age.");
+      threadsRef.push({ name, message, bgColor, textColor, borderColor });
+      e.target.reset();
+      loadThreads();
+    });
+
+    // Contract text auto update with name and age
+    function updateContractText() {
+      const name = document.getElementById("contractName").value.trim() || "[NAME]";
+      const age = document.getElementById("contractAge").value.trim() || "[AGE]";
+      const txt = `I, ${name}, aged ${age}, hereby swear not to reveal, report, expose, or otherwise disclose any internal matters, secrets, or activities of the No Snitch Group to any outside parties. By submitting this contract, I commit to this oath permanently and of my own free will.`;
+      document.getElementById("contractText").value = txt;
+    }
+    document.getElementById("contractName").addEventListener("input", updateContractText);
+    document.getElementById("contractAge").addEventListener("input", updateContractText);
+
+    // Contract signing
+    document.getElementById("signButton").addEventListener("click", () => {
+      const name = document.getElementById("contractName").value.trim();
+      const age = document.getElementById("contractAge").value.trim();
+      const message = document.getElementById("contractText").value.trim();
+      const file = document.getElementById("contractPhoto").files[0];
+      const bgColor = document.getElementById("contractBgColor").value;
+      const textColor = document.getElementById("contractTextColor").value;
+      const borderColor = document.getElementById("contractBorderColor").value;
+
+      if (!name || !age) return alert("Please fill in name and age.");
+
+      function saveContract(photo) {
+        pinnedRef.once('value').then(snapshot => {
+          const currentPinned = snapshot.val() || {};
+          let pinnedArray = Object.values(currentPinned);
+
+          pinnedArray.push({ name, age, message, photo, bgColor, textColor, borderColor });
+
+          // Keep only last 10 pinned contracts
+          if (pinnedArray.length > 10) pinnedArray = pinnedArray.slice(-10);
+
+          // Rebuild object with numeric keys
+          const updatedPinned = {};
+          pinnedArray.forEach((contract, i) => {
+            updatedPinned[i] = contract;
+          });
+
+          pinnedRef.set(updatedPinned).then(() => {
+            loadThreads();
+            document.getElementById("contractForm").reset();
+            updateContractText();
+          });
+        });
+      }
 
       if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
-          const contract = { name, age, message: contractText, photo: e.target.result };
-          pinnedRef.set(contract);
-          loadThreads();
-          document.getElementById('contractForm').reset();
+          saveContract(e.target.result);
         };
         reader.readAsDataURL(file);
       } else {
-        const contract = { name, age, message: contractText, photo: null };
-        pinnedRef.set(contract);
-        loadThreads();
-        document.getElementById('contractForm').reset();
+        saveContract(null);
       }
     });
 
-    // Handle thread post
-    document.getElementById('threadForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const name = document.getElementById('name').value.trim();
-      const message = document.getElementById('message').value.trim();
-      if (!name || !message) return;
+    // Theme toggle logic
+    const themeToggleBtn = document.getElementById("themeToggle");
+    function setTheme(theme) {
+      if (theme === "dark") {
+        document.body.classList.add("dark");
+        themeToggleBtn.textContent = "Light Mode";
+      } else {
+        document.body.classList.remove("dark");
+        themeToggleBtn.textContent = "Dark Mode";
+      }
+      localStorage.setItem("theme", theme);
+    }
 
-      threadsRef.push({ name, message });
-      document.getElementById('threadForm').reset();
-      loadThreads();
+    themeToggleBtn.addEventListener("click", () => {
+      const currentTheme = localStorage.getItem("theme") || "light";
+      setTheme(currentTheme === "light" ? "dark" : "light");
     });
+
+    // Load saved theme on page load
+    const savedTheme = localStorage.getItem("theme") || "light";
+    setTheme(savedTheme);
+
+    // Refresh threads every 20 seconds
+    setInterval(loadThreads, 20000);
+
+    // Initial load
+    loadThreads();
   </script>
 </body>
 </html>
