@@ -174,6 +174,22 @@
       justify-content: center;
       margin-top: 1rem;
     }
+    #notificationBox {
+      position: fixed;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #323232;
+      color: #fff;
+      padding: 1rem 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      z-index: 9999;
+      display: none;
+      max-width: 90%;
+      text-align: center;
+      font-size: 1rem;
+    }
     @media (max-width: 600px) {
       .container {
         padding: 0.5rem;
@@ -183,11 +199,13 @@
 </head>
 <body>
   <button class="toggle-dark" onclick="toggleDarkMode()">Dark Mode</button>
+
   <div class="container">
     <h1>No Snitch Group</h1>
     <div class="color-guide">
       <p>You can change the <strong>background</strong>, <strong>text color</strong>, and <strong>side border color</strong> of your thread using the color pickers below.</p>
     </div>
+
     <div class="form" id="threadForm">
       <input type="text" placeholder="Name" id="threadName">
       <input type="number" placeholder="Age" id="threadAge">
@@ -201,6 +219,7 @@
       <textarea placeholder="Your thread..." id="threadContent"></textarea>
       <button id="uploadThread">Upload Thread</button>
     </div>
+
     <div class="form" id="contractForm">
       <input type="text" placeholder="Name" id="contractName">
       <input type="number" placeholder="Age" id="contractAge">
@@ -212,15 +231,16 @@
         </button>
       </div>
     </div>
+
     <div class="wall">
-      <div class="pinned-contracts" id="contracts">
-        <h2>Pinned Contracts (Max 10)</h2>
-      </div>
-      <div class="threads" id="threads">
-        <h2>Threads</h2>
-      </div>
+      <div class="pinned-contracts" id="contracts"><h2>Pinned Contracts (Max 10)</h2></div>
+      <div class="threads" id="threads"><h2>Threads</h2></div>
     </div>
   </div>
+
+  <div id="notificationBox"></div>
+  <audio id="notifSound" src="https://notificationsounds.com/notification-sounds/event-538/download/mp3" preload="auto"></audio>
+
   <button class="add-btn" onclick="toggleOptions()">+</button>
   <div class="add-options" id="addOptions">
     <button onclick="showForm('thread')">✉️</button>
@@ -229,7 +249,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getDatabase, ref, push, get, remove } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getDatabase, ref, push, get, remove, set, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
     const app = initializeApp({
       apiKey: "AIzaSyBpbIxqdF8V88uhWnyhTDWdGQBcnqk11gQ",
@@ -243,6 +263,70 @@
     });
 
     const db = getDatabase(app);
+
+    // 🔐 Generate unique device ID for this browser session
+    const deviceId = sessionStorage.getItem('deviceId') || (() => {
+      const id = 'device-' + Math.random().toString(36).substr(2, 9);
+      sessionStorage.setItem('deviceId', id);
+      return id;
+    })();
+
+    function showNotification(message, playSound = false) {
+      const box = document.getElementById("notificationBox");
+      box.textContent = message;
+      box.style.display = "block";
+      if (playSound) {
+        const sound = document.getElementById("notifSound");
+        sound.currentTime = 0;
+        sound.play();
+      }
+      setTimeout(() => {
+        box.style.display = "none";
+      }, 3000);
+    }
+
+    // 🔄 Real-time notification logic
+    let lastActivity = 0;
+    get(ref(db, 'latestActivity')).then(snap => {
+      const data = snap.val();
+      if (data && data.timestamp) {
+        lastActivity = data.timestamp;
+      }
+    });
+
+    onValue(ref(db, 'latestActivity'), snap => {
+      const data = snap.val();
+      if (data && data.timestamp > lastActivity && data.deviceId !== deviceId) {
+        lastActivity = data.timestamp;
+        showNotification(data.message, true);
+      }
+    });
+
+    function loadThreads() {
+      get(ref(db, 'threads')).then(snap => {
+        if (snap.exists()) {
+          const data = Object.entries(snap.val()).sort((a, b) => b[1].timestamp - a[1].timestamp);
+          renderThread(data);
+        }
+      });
+    }
+
+    function loadContracts() {
+      get(ref(db, 'contracts')).then(snap => {
+        if (snap.exists()) {
+          const data = Object.entries(snap.val()).sort((a, b) => b[1].timestamp - a[1].timestamp);
+          renderContracts(data);
+        }
+      });
+    }
+
+    setInterval(() => {
+      loadThreads();
+      loadContracts();
+    }, 10000);
+
+    loadThreads();
+    loadContracts();
 
     document.getElementById("uploadThread").addEventListener("click", async () => {
       const name = document.getElementById("threadName").value;
@@ -266,14 +350,20 @@
       }
 
       const newThread = { name, age, bgColor, textColor, borderColor, content, imageURL, timestamp: Date.now(), replies: [] };
-      push(ref(db, 'threads'), newThread);
+      await push(ref(db, 'threads'), newThread);
+
+      showNotification(`${name} shared a thread`, true);
+      await set(ref(db, 'latestActivity'), {
+        message: `${name} shared a thread`,
+        timestamp: Date.now(),
+        deviceId
+      });
     });
 
     window.signContract = async () => {
       const name = document.getElementById("contractName").value;
       const age = document.getElementById("contractAge").value;
       const imageInput = document.getElementById("contractImage");
-
       if (!name || !age) return alert("Name and Age are required");
 
       let imageURL = "";
@@ -295,7 +385,33 @@
         timestamp: Date.now()
       };
 
-      push(ref(db, 'contracts'), contract);
+      await push(ref(db, 'contracts'), contract);
+
+      showNotification(`${name} signed the contract`, true);
+      await set(ref(db, 'latestActivity'), {
+        message: `${name} signed the contract`,
+        timestamp: Date.now(),
+        deviceId
+      });
+    };
+
+    window.toggleOptions = () => {
+      const box = document.getElementById("addOptions");
+      box.style.display = box.style.display === "flex" ? "none" : "flex";
+    };
+
+    window.showForm = (type) => {
+      document.getElementById("threadForm").style.display = type === 'thread' ? 'flex' : 'none';
+      document.getElementById("contractForm").style.display = type === 'contract' ? 'flex' : 'none';
+      if (type === 'contract') {
+        const name = document.getElementById("contractName").value;
+        document.getElementById("contractText").textContent =
+          `I ${name || '[Your Name]'} a member of No Snitch Group and I promised that I will never Snitched someone in the group and never leaked the gc`;
+      }
+    };
+
+    window.toggleDarkMode = () => {
+      document.body.classList.toggle("dark-mode");
     };
 
     function renderThread(data) {
@@ -363,54 +479,10 @@
         const data = snap.val();
         const updatedReplies = data.replies || [];
         updatedReplies.push({ name, text });
-        await push(ref(db, `threads`), { ...data, replies: updatedReplies });
+        await push(ref(db, 'threads'), { ...data, replies: updatedReplies });
         await remove(ref(db, `threads/${key}`));
         loadThreads();
       }
-    };
-
-    function loadThreads() {
-      get(ref(db, 'threads')).then(snap => {
-        if (snap.exists()) {
-          const data = Object.entries(snap.val()).sort((a, b) => b[1].timestamp - a[1].timestamp);
-          renderThread(data);
-        }
-      });
-    }
-
-    function loadContracts() {
-      get(ref(db, 'contracts')).then(snap => {
-        if (snap.exists()) {
-          const data = Object.entries(snap.val()).sort((a, b) => b[1].timestamp - a[1].timestamp);
-          renderContracts(data);
-        }
-      });
-    }
-
-    setInterval(() => {
-      loadThreads();
-      loadContracts();
-    }, 10000);
-
-    loadThreads();
-    loadContracts();
-
-    window.toggleOptions = () => {
-      const box = document.getElementById("addOptions");
-      box.style.display = box.style.display === "flex" ? "none" : "flex";
-    };
-
-    window.showForm = (type) => {
-      document.getElementById("threadForm").style.display = type === 'thread' ? 'flex' : 'none';
-      document.getElementById("contractForm").style.display = type === 'contract' ? 'flex' : 'none';
-      if (type === 'contract') {
-        const name = document.getElementById("contractName").value;
-        document.getElementById("contractText").textContent = `I ${name || '[Your Name]'} a member of No Snitch Group and I promised that I will never Snitched someone in the group and never leaked the gc`;
-      }
-    };
-
-    window.toggleDarkMode = () => {
-      document.body.classList.toggle("dark-mode");
     };
   </script>
 </body>
